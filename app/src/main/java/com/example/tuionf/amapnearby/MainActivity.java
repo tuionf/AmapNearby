@@ -1,6 +1,8 @@
 package com.example.tuionf.amapnearby;
 
 import android.app.Activity;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -17,6 +19,8 @@ import com.amap.api.maps.AMapUtils;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.MapView;
 import com.amap.api.maps.UiSettings;
+import com.amap.api.maps.model.BitmapDescriptorFactory;
+import com.amap.api.maps.model.CircleOptions;
 import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
@@ -175,9 +179,13 @@ public class MainActivity extends Activity implements AMapLocationListener,PoiSe
                         int size = poiItems.size();
                         Log.d(TAG, "onPoiSearched: "+size);
                         aMap.clear();// 清理之前的图标
+                        //通过此构造函数创建Poi图层
                         PoiOverlay poiOverlay = new PoiOverlay(aMap, poiItems);
+//                        去掉PoiOverlay上所有的Marker
                         poiOverlay.removeFromMap();
+                        //添加Marker到地图中
                         poiOverlay.addToMap();
+//                        移动镜头到当前的视角
                         poiOverlay.zoomToSpan();
 
                         for (int i = 0;i < size;i++){
@@ -188,6 +196,22 @@ public class MainActivity extends Activity implements AMapLocationListener,PoiSe
                             Log.d(TAG, "onPoiSearched: "+i+"+++"+latitudePoi+";;;"+longitudePoi+"==");
                         }
                         Log.d(TAG, "onPoiSearched: for走完了");
+//                        定义了一个marker 的选项
+                        MarkerOptions markerOptions = new MarkerOptions();
+//                        定义marker 图标的锚点。锚点是marker 图标接触地图平面的点。图标的左顶点为（0,0）点，右底点为（1,1）点。
+//                        默认为（0.5,1.0）
+                        markerOptions.anchor(0.5f,0.5f);
+                        markerOptions.icon(BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(getResources(),R.drawable.point4)));
+//                        设置当前MarkerOptions 对象的经纬度
+                        markerOptions.position(currentLatLng);
+//                        Marker 是在地图上的一个点绘制图标
+                        aMap.addMarker(markerOptions);
+
+                        aMap.addCircle(new CircleOptions()
+                                .center(currentLatLng).radius(5000)
+                                .strokeColor(Color.BLUE)
+                                .fillColor(Color.argb(50, 1, 1, 1))
+                                .strokeWidth(2));
                     } else if (suggestionCities != null
                             && suggestionCities.size() > 0) {
 //                        showSuggestCity(suggestionCities);
