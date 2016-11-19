@@ -31,11 +31,19 @@ import com.amap.api.services.core.PoiItem;
 import com.amap.api.services.core.SuggestionCity;
 import com.amap.api.services.poisearch.PoiResult;
 import com.amap.api.services.poisearch.PoiSearch;
+import com.amap.api.services.weather.LocalWeatherForecastResult;
+import com.amap.api.services.weather.LocalWeatherLive;
+import com.amap.api.services.weather.LocalWeatherLiveResult;
+import com.amap.api.services.weather.WeatherSearch;
+import com.amap.api.services.weather.WeatherSearchQuery;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends Activity implements AMapLocationListener,PoiSearch.OnPoiSearchListener{
+public class MainActivity extends Activity implements AMapLocationListener,
+        PoiSearch.OnPoiSearchListener,
+        WeatherSearch.OnWeatherSearchListener
+        {
 
 
     private MapView mMapView;
@@ -57,6 +65,10 @@ public class MainActivity extends Activity implements AMapLocationListener,PoiSe
     private ArrayList<LatLng> latlngLists;
     private LatLng latlngPoi;//poi的 点
     private LatLng[] latlngs = new LatLng[30];
+    private WeatherSearchQuery watherSearchquery;
+    private String cityName;
+    private WeatherSearch mweathersearch;
+    private LocalWeatherLive weatherlive;
     private static final String TAG = "MainActivity";
 
 
@@ -77,6 +89,7 @@ public class MainActivity extends Activity implements AMapLocationListener,PoiSe
             public void onClick(View v) {
                 poiSearch();
                 Log.d(TAG, "onClick: 搜索");
+                getWeatherInfo();
             }
         });
 
@@ -89,6 +102,7 @@ public class MainActivity extends Activity implements AMapLocationListener,PoiSe
 
 
         init();
+
 
     }
 
@@ -137,6 +151,9 @@ public class MainActivity extends Activity implements AMapLocationListener,PoiSe
                     aMap.addText(new TextOptions().position(currentLatLng).text(aMapLocation.getAddress()));
                     //固定标签在屏幕中央
                     locationMarker.setPositionByPixels(mMapView.getWidth() / 2,mMapView.getHeight() / 2);
+                    cityName = aMapLocation.getCity();
+                    Log.d(TAG, "onLocationChanged: "+cityName);
+
                 } else {
                     //已经添加过了，修改位置即可
                     locationMarker.setPosition(currentLatLng);
@@ -266,7 +283,40 @@ public class MainActivity extends Activity implements AMapLocationListener,PoiSe
 //        Log.d(TAG, "getNearestLocation: 最近距离"+ distance);
     }
 
+    private void getWeatherInfo(){
+        // 1.设置查询条件及天气监听接口
+        //检索参数为城市和天气类型，实况天气为WEATHER_TYPE_LIVE、天气预报为WEATHER_TYPE_FORECAST
+        watherSearchquery = new WeatherSearchQuery(cityName, WeatherSearchQuery.WEATHER_TYPE_LIVE);
+        mweathersearch=new WeatherSearch(this);
+        mweathersearch.setOnWeatherSearchListener(this);
+        mweathersearch.setQuery(watherSearchquery);
+        mweathersearch.searchWeatherAsyn(); //异步搜索
+    }
+
     @Override
+    public void onWeatherLiveSearched(LocalWeatherLiveResult weatherLiveResult, int rCode) {
+        if (rCode == 1000) {
+            if (weatherLiveResult != null && weatherLiveResult.getLiveResult() != null) {
+                weatherlive = weatherLiveResult.getLiveResult();
+                tvResult.setText(weatherlive.getReportTime()+"发布"+weatherlive.getWeather()+
+                        weatherlive.getTemperature()+"°"+
+                        weatherlive.getWindDirection()+"风     "+weatherlive.getWindPower()+"级"+
+                        "湿度         "+weatherlive.getHumidity()+"%");
+
+            }else {
+                Toast.makeText(MainActivity.this,"获取数据失败",Toast.LENGTH_SHORT).show();
+            }
+        }else {
+            Toast.makeText(MainActivity.this,"获取数据失败",Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onWeatherForecastSearched(LocalWeatherForecastResult localWeatherForecastResult, int i) {
+
+    }
+
+            @Override
     protected void onDestroy() {
         super.onDestroy();
         //在activity执行onDestroy时执行mMapView.onDestroy()，实现地图生命周期管理
